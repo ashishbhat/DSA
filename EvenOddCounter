@@ -1,0 +1,91 @@
+package practice;
+
+class CCounter {
+	private int c = 0;
+	private volatile int flick = 0;
+
+	public synchronized void increment() {
+		c++;
+	}
+
+	public synchronized int value() {
+		return c;
+	}
+
+	public int getFlick() {
+		return flick;
+	}
+
+	public void setFlick(int i) {
+		flick = i;
+	}
+}
+
+class OddThread implements Runnable {
+
+	CCounter c;
+
+	OddThread(CCounter c) {
+		this.c = c;
+	}
+
+	public void run() {
+		for (int i = 0; i < 5; ++i) {
+			synchronized (c) {
+				while (c.getFlick() != 0) {
+					try {
+						c.wait();
+					} catch (Exception ex) {
+					}
+				}
+				c.increment();
+				System.out.println("Odd: " + c.value());
+				c.setFlick(1);
+				c.notifyAll();
+			}
+
+		}
+	}
+}
+
+class EvenThread implements Runnable {
+
+	CCounter c;
+
+	EvenThread(CCounter c) {
+		this.c = c;
+	}
+
+	public void run() {
+		for (int i = 0; i < 5; ++i) {
+			synchronized (c) {
+				while (c.getFlick() != 1) {
+					try {
+						c.wait();
+					} catch (Exception ex) {
+					}
+				}
+				c.increment();
+				System.out.println("Even: " + c.value());
+				c.setFlick(0);
+				c.notifyAll();
+			}
+		}
+	}
+}
+
+public class EvenOddCounter {
+	public static void main(String[] args) throws InterruptedException {
+		CCounter c = new CCounter();
+		Thread t1 = new Thread(new EvenThread(c));
+		Thread t2 = new Thread(new OddThread(c));
+
+		t1.start();
+		t2.start();
+
+		t1.join();
+		t2.join();
+
+	}
+
+}
